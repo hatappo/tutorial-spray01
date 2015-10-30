@@ -37,5 +37,77 @@ trait MyService extends HttpService {
           }
         }
       }
-    }
+    } ~
+      //
+      // ---------- 確認用の雑多なレスポンス処理群。
+      //
+      (pathPrefix("misc") & (get | put)) {
+        pathEndOrSingleSlash {
+          complete {
+            ""
+          }
+        } ~ 
+          miscRoute
+      }
+
+
+  /**
+   * 雑多なルーティングをまとめた。
+   */
+  val miscRoute =
+    //
+    // ---------- 文字列 "ok" を返す。
+    //
+    (pathPrefix("health") & pathEndOrSingleSlash) {
+      complete {
+        "ok"
+      }
+    } ~
+      //
+      // ---------- HTMLで現在日時を返す。
+      //
+      (pathPrefix("date") & pathEndOrSingleSlash) {
+        respondWithMediaType(`text/html`) {
+          complete {
+            import java.text.{DateFormat, SimpleDateFormat}
+            import java.util.Date
+            val fmt: DateFormat = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSS")
+            s"<h1> ${fmt.format(new Date())} </h1>"
+          }
+        }
+      } ~
+      //
+      // ---------- 単純にリクエストパラメータ一覧を列挙。
+      //
+      (pathPrefix("param") & pathEndOrSingleSlash & parameterMap) { params =>
+        def inspectParam(p: (String, String)): String = s"${p._1} = ${p._2}"
+        val start = "the Parameters are below.\n" + ("-" * 40) + "\n\t"
+        val sep = "\n\t"
+        val end = "\n" + "-" * 40
+        complete(params.map(inspectParam).mkString(start, sep, end))
+      } ~
+      //
+      // ---------- 単純にヘッダから「Remote Address」を取得。
+      //
+      (pathPrefix("header") & pathEndOrSingleSlash & headerValueByType[HttpHeaders.`User-Agent`]()) { ua =>
+        complete(ua.toString())
+      } ~
+      //
+      // ---------- オープン・リダイレクタ
+      //
+      (pathPrefix("redirect") & pathEndOrSingleSlash & parameters('url ? "http://localhost:8080/", 'code ?)) { (url, code) =>
+        val statusCode = code.getOrElse("302") match {
+          case "301" => StatusCodes.MovedPermanently
+          case "302" => StatusCodes.Found
+          case _     => StatusCodes.Found
+        }
+        redirect(url, statusCode)
+      } ~
+      //
+      // ---------- 503 Service Unavailable
+      //
+      (pathPrefix("sorry") & pathEndOrSingleSlash) {
+        failWith(new RequestProcessingException(StatusCodes.ServiceUnavailable))
+      }
+
 }
