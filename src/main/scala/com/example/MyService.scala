@@ -5,28 +5,29 @@ import spray.routing._
 import spray.http._
 import MediaTypes._
 
-// we don't implement our route structure directly in the service actor because
-// we want to be able to test it independently, without having to spin up an actor
+// いちいちアクターを起動させないとテストできないのは嫌なので、独立してテスト可能にするため、
+// Webサービス用アクターに直接ルーティングを実装しないで（親トレイトの MyService に）分離しています。
 class MyServiceActor extends Actor with MyService {
 
-  // the HttpService trait defines only one abstract member, which
-  // connects the services environment to the enclosing actor or test
+  // HttpService トレイトは、この抽象メンバ1つを定義しているだけです。
+  // そして、これがアクター（あるいはテスト）に内包されたサービスの環境（コンテキスト）に接続します。
   def actorRefFactory = context
 
-  // this actor only runs our route, but you could add
-  // other things here, like request stream processing
-  // or timeout handling
+  // このアクターは私達が作ったルーティング処理のみを行いますが、
+  // その他の雑多な処理を追加しても問題ありません。
+  // 例えば、リクエストストリームの加工や接続のタイムアウト制御などを追加したりなどです。
   def receive = runRoute(myRoute)
 }
 
 
-// this trait defines our service behavior independently from the service actor
+// この TrackingService トレイトは、Webサービス用アクターから独立して、私達のサービスの振る舞いを定義します。
 trait MyService extends HttpService {
 
   val myRoute =
     path("") {
       get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
+        // デフォルトだと、XMLは text/xml にマーシャリングされてしまうので、単純にここで上書きしています。
+        respondWithMediaType(`text/html`) { 
           complete {
             <html>
               <body>

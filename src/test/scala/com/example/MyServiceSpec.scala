@@ -10,19 +10,19 @@ class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
   
   "MyService" should {
 
-    "return a greeting for GET requests to the root path" in {
+    "ルートパスへのGETリクエストに挨拶を返します。" in {
       Get() ~> myRoute ~> check {
         responseAs[String] must contain("Say hello")
       }
     }
 
-    "leave GET requests to other paths unhandled" in {
+    "その他の、制御されないパスへのGETリクエストは失敗します。" in {
       Get("/kermit") ~> myRoute ~> check {
         handled must beFalse
       }
     }
 
-    "return a MethodNotAllowed error for PUT requests to the root path" in {
+    "ルートパスへのPUTリクエストに MethodNotAllowed エラーを返します。" in {
       Put() ~> sealRoute(myRoute) ~> check {
         status === MethodNotAllowed
         responseAs[String] === "HTTP method not allowed, supported methods: GET"
