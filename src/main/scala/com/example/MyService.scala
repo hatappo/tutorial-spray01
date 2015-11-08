@@ -54,7 +54,7 @@ trait MyService extends HttpService {
   /**
    * 雑多なルーティングをまとめた。
    */
-  val miscRoute =
+  lazy val miscRoute =
     //
     // ---------- 文字列 "ok" を返す。
     //
